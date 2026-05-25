@@ -90,17 +90,21 @@ function ProductosPage() {
       const norm = (s: string) =>
         s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, "_");
 
-      // Busca el valor de una celda probando múltiples nombres de columna posibles
-      // Usa coincidencia por prefijo para tolerar nombres truncados (ej: "tipo_medica" → "tipo_medicamento")
+      // Busca el valor de una celda probando múltiples nombres de columna posibles.
+      // Fase 1: coincidencia exacta (prioridad). Fase 2: prefijo (tolera nombres truncados).
       const col = (r: Record<string, any>, ...keys: string[]): any => {
-        const entry = Object.entries(r).find(([k]) => {
-          const nk = norm(k);
-          return keys.some(k2 => {
-            const nk2 = norm(k2);
-            return nk === nk2 || nk2.startsWith(nk) || nk.startsWith(nk2);
-          });
-        });
-        return entry?.[1];
+        const normed = Object.entries(r).map(([k, v]) => [norm(k), v] as [string, any]);
+        for (const k2 of keys) {
+          const nk2 = norm(k2);
+          const found = normed.find(([nk]) => nk === nk2);
+          if (found) return found[1];
+        }
+        for (const k2 of keys) {
+          const nk2 = norm(k2);
+          const found = normed.find(([nk]) => nk !== nk2 && nk2.startsWith(nk));
+          if (found) return found[1];
+        }
+        return undefined;
       };
 
       // Convierte fecha: serialDate, Date object o string ISO → "YYYY-MM-DD" o null
