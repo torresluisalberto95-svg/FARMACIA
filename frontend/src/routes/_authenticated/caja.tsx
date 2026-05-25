@@ -40,16 +40,16 @@ function CajaPage() {
   const money = (n: number) => `$ ${Number(n).toLocaleString("es-CO")}`;
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto">
       <PageHeader title="Caja" description="Apertura, cierre y arqueo de tu caja." />
       <Card className="p-6 mb-6">
         {actual ? (
           <>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <div><Badge>Caja abierta</Badge><p className="text-sm text-muted-foreground mt-1">Desde {new Date(actual.abiertaAt).toLocaleString("es-CO")}</p></div>
               <div className="text-right"><p className="text-xs text-muted-foreground">Apertura</p><p className="text-xl font-bold">{money(actual.montoApertura)}</p></div>
             </div>
-            <div className="grid grid-cols-2 gap-4 p-4 rounded-lg bg-muted">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-lg bg-muted">
               <div><p className="text-xs">Ventas en caja</p><p className="text-lg font-semibold">{money(ventas)}</p></div>
               <div><p className="text-xs">Esperado en caja</p><p className="text-lg font-semibold">{money(Number(actual.montoApertura) + ventas)}</p></div>
             </div>

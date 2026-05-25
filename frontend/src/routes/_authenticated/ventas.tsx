@@ -92,7 +92,7 @@ function VentasPage() {
   const money = (n: number) => `$ ${n.toLocaleString("es-CO", { maximumFractionDigits: 0 })}`;
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
       <PageHeader title="Punto de venta" description="Registra ventas y genera tickets." />
       <div className="grid lg:grid-cols-[1fr_400px] gap-6">
         <div className="space-y-4">
@@ -153,9 +153,9 @@ function VentasPage() {
             <h3 className="text-sm font-semibold mb-2">Últimas ventas</h3>
             <ul className="text-sm divide-y">
               {historial.map(v => (
-                <li key={v.id} className="flex justify-between py-2">
-                  <span>#{v.numero} · {v.metodoPago} · {new Date(v.createdAt).toLocaleString("es-CO")}</span>
-                  <span className="font-medium">{money(Number(v.total))}</span>
+                <li key={v.id} className="flex flex-wrap justify-between gap-x-4 py-2">
+                  <span className="min-w-0">#{v.numero} · {v.metodoPago} · {new Date(v.createdAt).toLocaleString("es-CO")}</span>
+                  <span className="font-medium shrink-0">{money(Number(v.total))}</span>
                 </li>
               ))}
               {historial.length === 0 && <li className="py-2 text-muted-foreground">Sin ventas</li>}

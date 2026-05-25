@@ -54,7 +54,7 @@ function ComprasPage() {
   const money = (n: number) => `$ ${n.toLocaleString("es-CO")}`;
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-6xl mx-auto">
       <PageHeader title="Compras" description="Registra compras a proveedores. El stock se actualiza automáticamente." />
       <div className="grid lg:grid-cols-2 gap-6">
         <Card className="p-5">
@@ -64,7 +64,7 @@ function ComprasPage() {
             <SelectTrigger><SelectValue placeholder="Sin proveedor" /></SelectTrigger>
             <SelectContent>{proveedores.map(p => <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>)}</SelectContent>
           </Select>
-          <div className="mt-4 grid grid-cols-[1fr_80px_120px_auto] gap-2 items-end">
+          <div className="mt-4 grid grid-cols-2 sm:grid-cols-[1fr_80px_120px_auto] gap-2 items-end">
             <div><Label className="text-xs">Producto</Label>
               <Select value={pid} onValueChange={v => { setPid(v); const p = productos.find(x => x.id === v); if (p) setPrecio(Number(p.precioCompra)); }}>
                 <SelectTrigger><SelectValue placeholder="Selecciona…" /></SelectTrigger>
@@ -75,7 +75,7 @@ function ComprasPage() {
             <div><Label className="text-xs">Precio</Label><Input type="number" value={precio} onChange={e => setPrecio(Number(e.target.value))} /></div>
             <Button size="icon" onClick={addItem}><Plus className="h-4 w-4" /></Button>
           </div>
-          <Table className="mt-4">
+          <div className="overflow-x-auto mt-4"><Table>
             <TableHeader><TableRow><TableHead>Producto</TableHead><TableHead>Cant</TableHead><TableHead>Precio</TableHead><TableHead /></TableRow></TableHeader>
             <TableBody>
               {items.map((it, i) => {
@@ -85,7 +85,7 @@ function ComprasPage() {
               })}
               {items.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-4">Sin productos</TableCell></TableRow>}
             </TableBody>
-          </Table>
+          </Table></div>
           <div className="flex justify-between items-center mt-4 border-t pt-4">
             <span className="font-semibold">Total: {money(total)}</span>
             <Button onClick={guardar} disabled={items.length === 0}>Registrar compra</Button>

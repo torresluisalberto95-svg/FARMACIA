@@ -33,7 +33,7 @@ function ConfiguracionPage() {
   };
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-3xl mx-auto">
       <PageHeader title="Configuración" description="Personaliza la marca visible en todo el sistema." />
       <Card className="p-6 mb-6">
         <div className="flex items-center gap-6">

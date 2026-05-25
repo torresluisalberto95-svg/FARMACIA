@@ -24,7 +24,7 @@ function ReportesPage() {
   if (!data) return <div className="p-6">Cargando…</div>;
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
       <PageHeader title="Reportes" description="Visión consolidada de la operación." />
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card className="p-4"><p className="text-xs uppercase text-muted-foreground">Ventas hoy</p><p className="text-2xl font-bold">{data.ventasHoy}</p><p className="text-sm">{money(data.totalHoy)}</p></Card>
@@ -35,6 +35,7 @@ function ReportesPage() {
       <div className="grid lg:grid-cols-2 gap-6">
         <Card className="p-5">
           <h3 className="font-semibold mb-3">Productos agotados</h3>
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader><TableRow><TableHead>Producto</TableHead><TableHead className="text-right">Stock</TableHead></TableRow></TableHeader>
             <TableBody>
@@ -42,9 +43,11 @@ function ReportesPage() {
               {data.agotados.length === 0 && <TableRow><TableCell colSpan={2} className="text-center text-muted-foreground py-6">Sin agotados</TableCell></TableRow>}
             </TableBody>
           </Table>
+          </div>
         </Card>
         <Card className="p-5">
           <h3 className="font-semibold mb-3">Productos vencidos</h3>
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader><TableRow><TableHead>Producto</TableHead><TableHead>Lote</TableHead><TableHead>Vence</TableHead></TableRow></TableHeader>
             <TableBody>
@@ -52,6 +55,7 @@ function ReportesPage() {
               {data.vencidos.length === 0 && <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-6">Sin vencidos</TableCell></TableRow>}
             </TableBody>
           </Table>
+          </div>
         </Card>
       </div>
     </div>

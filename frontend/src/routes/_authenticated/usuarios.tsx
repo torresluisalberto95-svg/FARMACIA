@@ -59,7 +59,7 @@ function UsuariosPage() {
   };
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto">
       <PageHeader title="Usuarios" description="Crea, edita o elimina cuentas y asigna roles."
         actions={
           <Dialog open={openCreate} onOpenChange={setOpenCreate}>
@@ -83,6 +83,7 @@ function UsuariosPage() {
         }
       />
       <Card className="p-4">
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader><TableRow><TableHead>Nombre</TableHead><TableHead>Correo</TableHead><TableHead>Rol</TableHead><TableHead className="text-right">Acciones</TableHead></TableRow></TableHeader>
           <TableBody>
@@ -106,6 +107,7 @@ function UsuariosPage() {
             {users.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-6">Sin usuarios</TableCell></TableRow>}
           </TableBody>
         </Table>
+        </div>
       </Card>
       <Dialog open={!!editing} onOpenChange={o => !o && setEditing(null)}>
         <DialogContent>

@@ -40,7 +40,7 @@ function ProveedoresPage() {
   };
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto">
       <PageHeader title="Proveedores" description="Gestiona tus proveedores."
         actions={
           <Dialog open={open} onOpenChange={o => { setOpen(o); if (!o) setEditing(empty); }}>
@@ -60,6 +60,7 @@ function ProveedoresPage() {
         }
       />
       <Card className="p-4">
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader><TableRow><TableHead>Nombre</TableHead><TableHead>NIT</TableHead><TableHead>Teléfono</TableHead><TableHead>Correo</TableHead><TableHead /></TableRow></TableHeader>
           <TableBody>
@@ -80,6 +81,7 @@ function ProveedoresPage() {
             {items.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Sin proveedores</TableCell></TableRow>}
           </TableBody>
         </Table>
+        </div>
       </Card>
     </div>
   );

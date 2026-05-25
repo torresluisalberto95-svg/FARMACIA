@@ -58,7 +58,7 @@ function ClientesPage() {
   };
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto">
       <PageHeader title="Clientes" description="Directorio de clientes."
         actions={
           <Dialog open={open} onOpenChange={o => { setOpen(o); if (!o) setEditing(empty); }}>
@@ -78,6 +78,7 @@ function ClientesPage() {
       />
       <Card className="p-4">
         <Input placeholder="Buscar por nombre o documento…" value={q} onChange={e => setQ(e.target.value)} className="mb-3 max-w-md" />
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader><TableRow><TableHead>Nombre</TableHead><TableHead>Documento</TableHead><TableHead>Teléfono</TableHead><TableHead>Dirección</TableHead><TableHead /></TableRow></TableHeader>
           <TableBody>
@@ -98,6 +99,7 @@ function ClientesPage() {
             {filtered.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Sin clientes</TableCell></TableRow>}
           </TableBody>
         </Table>
+        </div>
       </Card>
     </div>
   );

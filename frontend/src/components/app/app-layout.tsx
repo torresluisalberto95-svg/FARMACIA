@@ -79,7 +79,7 @@ export function AppLayout() {
         </header>
         <main className="flex-1 overflow-auto"><Outlet /></main>
         <nav className="lg:hidden border-t bg-card flex overflow-x-auto">
-          {items.slice(0, 5).map(({ to, label, icon: Icon }) => (
+          {items.map(({ to, label, icon: Icon }) => (
             <Link key={to} to={to} className="flex-1 min-w-[72px] flex flex-col items-center py-2 text-xs text-muted-foreground [&.active]:text-primary" activeProps={{ className: "active" }}>
               <Icon className="h-5 w-5 mb-0.5" />{label}
             </Link>

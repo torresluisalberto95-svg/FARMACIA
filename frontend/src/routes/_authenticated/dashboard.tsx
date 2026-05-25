@@ -40,7 +40,7 @@ function Dashboard() {
   if (!stats) return <div className="p-6">Cargando…</div>;
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
       <PageHeader title={`Hola, ${fullName || "bienvenido"}`} description="Resumen del día" />
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Stat label="Ventas hoy" value={String(stats.ventasHoy)} icon={ShoppingCart} />

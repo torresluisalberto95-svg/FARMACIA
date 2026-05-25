@@ -104,7 +104,7 @@ function ProductosPage() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
       <PageHeader title="Inventario" description={isAdmin ? "Gestiona productos." : "Consulta de productos."}
         actions={isAdmin && (<>
           <Button variant="outline" onClick={exportarExcel}><Download className="h-4 w-4 mr-1" />Exportar</Button>
