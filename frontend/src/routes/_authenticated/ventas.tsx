@@ -80,7 +80,7 @@ function VentasPage() {
         items: items.map(it => ({ productoId: it.producto.id, cantidad: it.cantidad, precioUnitario: Number(it.producto.precioVenta) })),
         descuento, metodoPago: metodo,
       });
-      toast.success(`Venta #${venta.numero} registrada`);
+      toast.success("Venta registrada correctamente");
       setItems([]); setDescuento(0); setCliente("ninguno"); load();
     } catch (err: any) {
       toast.error(err.response?.data ?? err.message ?? "Error");
