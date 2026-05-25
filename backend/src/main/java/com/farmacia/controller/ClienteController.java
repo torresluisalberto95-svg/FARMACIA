@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
+
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,8 +29,8 @@ public class ClienteController {
 
     @PostMapping
     public ResponseEntity<Cliente> crear(@RequestBody Cliente cliente,
-                                          @AuthenticationPrincipal UserDetails userDetails) {
-        AppUser user = userRepository.findByEmail(userDetails.getUsername()).orElseThrow();
+                                          @AuthenticationPrincipal String username) {
+        AppUser user = userRepository.findByEmail(username).orElseThrow();
         cliente.setCreatedBy(user.getId());
         return ResponseEntity.ok(repository.save(cliente));
     }

@@ -7,7 +7,7 @@ import com.farmacia.service.CajaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
+
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -23,15 +23,15 @@ public class CajaController {
     private final AppUserRepository userRepository;
 
     @GetMapping
-    public ResponseEntity<Map<String, Object>> estado(@AuthenticationPrincipal UserDetails userDetails) {
-        AppUser user = userRepository.findByEmail(userDetails.getUsername()).orElseThrow();
+    public ResponseEntity<Map<String, Object>> estado(@AuthenticationPrincipal String username) {
+        AppUser user = userRepository.findByEmail(username).orElseThrow();
         return ResponseEntity.ok(cajaService.estado(user.getId()));
     }
 
     @PostMapping("/abrir")
     public ResponseEntity<Caja> abrir(@RequestBody Map<String, Object> body,
-                                       @AuthenticationPrincipal UserDetails userDetails) {
-        AppUser user = userRepository.findByEmail(userDetails.getUsername()).orElseThrow();
+                                       @AuthenticationPrincipal String username) {
+        AppUser user = userRepository.findByEmail(username).orElseThrow();
         BigDecimal monto = new BigDecimal(body.getOrDefault("montoApertura", "0").toString());
         return ResponseEntity.ok(cajaService.abrir(user.getId(), monto));
     }

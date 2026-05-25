@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
+
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -31,9 +31,9 @@ public class CompraController {
 
     @PostMapping
     public ResponseEntity<?> crear(@Valid @RequestBody CompraRequest request,
-                                    @AuthenticationPrincipal UserDetails userDetails) {
+                                    @AuthenticationPrincipal String username) {
         try {
-            AppUser user = userRepository.findByEmail(userDetails.getUsername()).orElseThrow();
+            AppUser user = userRepository.findByEmail(username).orElseThrow();
             return ResponseEntity.ok(compraService.crear(request, user.getId()));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

@@ -9,7 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
+
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,9 +29,9 @@ public class VentaController {
 
     @PostMapping
     public ResponseEntity<?> crear(@Valid @RequestBody VentaRequest request,
-                                    @AuthenticationPrincipal UserDetails userDetails) {
+                                    @AuthenticationPrincipal String username) {
         try {
-            AppUser user = userRepository.findByEmail(userDetails.getUsername()).orElseThrow();
+            AppUser user = userRepository.findByEmail(username).orElseThrow();
             Venta venta = ventaService.crear(request, user.getId());
             return ResponseEntity.ok(venta);
         } catch (RuntimeException e) {
