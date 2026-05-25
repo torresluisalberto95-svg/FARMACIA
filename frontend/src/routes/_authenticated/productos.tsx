@@ -80,27 +80,72 @@ function ProductosPage() {
     try {
       const XLSX = await import("xlsx");
       const buf = await file.arrayBuffer();
-      const wb = XLSX.read(buf);
+      // cellDates:true convierte fechas seriales de Excel en objetos Date
+      const wb = XLSX.read(buf, { cellDates: true });
       const ws = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json<Record<string, any>>(ws);
       if (!rows.length) return toast.error("Archivo vacío");
-      const payload: Partial<Producto>[] = rows.map(r => ({
-        codigo: String(r.codigo ?? r.Codigo ?? "").trim(),
-        codigoBarras: r.codigo_barras ? String(r.codigo_barras) : null,
-        nombre: String(r.nombre ?? r.Nombre ?? "").trim(),
-        tipoMedicamento: (r.tipo_medicamento ?? "comercial").toString().toLowerCase() === "generico" ? "generico" : "comercial",
-        marca: r.marca ?? null, laboratorio: r.laboratorio ?? null,
-        registroInvima: r.registro_invima ? String(r.registro_invima) : null,
-        lote: r.lote ? String(r.lote) : null,
-        fechaVencimiento: r.fecha_vencimiento ? String(r.fecha_vencimiento).slice(0, 10) : null,
-        precioCompra: Number(r.precio_compra) || 0, precioVenta: Number(r.precio_venta) || 0,
-        iva: Number(r.iva) || 0, stock: Number(r.stock) || 0, stockMinimo: Number(r.stock_minimo) || 5,
-        activo: r.activo === undefined ? true : Boolean(r.activo),
-      })).filter(p => p.codigo && p.nombre);
-      if (!payload.length) return toast.error("No hay filas válidas");
+
+      // Normaliza clave: minúsculas + sin tildes + espacios→guión bajo
+      const norm = (s: string) =>
+        s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, "_");
+
+      // Busca el valor de una celda probando múltiples nombres de columna posibles
+      const col = (r: Record<string, any>, ...keys: string[]): any => {
+        const entry = Object.entries(r).find(([k]) => keys.some(k2 => norm(k) === norm(k2)));
+        return entry?.[1];
+      };
+
+      // Convierte fecha: serialDate, Date object o string ISO → "YYYY-MM-DD" o null
+      const fmtDate = (v: any): string | null => {
+        if (!v && v !== 0) return null;
+        if (v instanceof Date) return v.toISOString().slice(0, 10);
+        const s = String(v).trim();
+        // Fecha ISO ya formateada
+        if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+        // Número serial de Excel (días desde 1900)
+        const n = Number(s);
+        if (!isNaN(n) && n > 1000) {
+          const d = XLSX.SSF.parse_date_code(n);
+          if (d) return `${d.y}-${String(d.m).padStart(2,"0")}-${String(d.d).padStart(2,"0")}`;
+        }
+        return null;
+      };
+
+      let autoIdx = 1;
+      const payload: Partial<Producto>[] = rows.map(r => {
+        const nombre = String(
+          col(r, "nombre","name","producto","medicamento","articulo","descripcion","description") ?? ""
+        ).trim();
+        if (!nombre) return null;
+        const codigoRaw = col(r, "codigo","code","cod","ref","referencia","sku","id_producto");
+        const codigo = codigoRaw ? String(codigoRaw).trim() : `PROD-${String(autoIdx++).padStart(4,"0")}`;
+        return {
+          codigo,
+          codigoBarras: col(r,"codigo_barras","barcode","ean","upc") ? String(col(r,"codigo_barras","barcode","ean","upc")) : null,
+          nombre,
+          tipoMedicamento: String(col(r,"tipo_medicamento","tipo","type") ?? "comercial").toLowerCase() === "generico" ? "generico" : "comercial",
+          marca: col(r,"marca","brand","fabricante") ? String(col(r,"marca","brand","fabricante")) : null,
+          laboratorio: col(r,"laboratorio","lab","manufacturer") ? String(col(r,"laboratorio","lab","manufacturer")) : null,
+          registroInvima: col(r,"registro_invima","invima","registro") ? String(col(r,"registro_invima","invima","registro")) : null,
+          lote: col(r,"lote","batch","lot","lote_numero") ? String(col(r,"lote","batch","lot","lote_numero")) : null,
+          fechaVencimiento: fmtDate(col(r,"fecha_vencimiento","vencimiento","expiry","expiracion","vence","fecha_exp")),
+          precioCompra: Number(col(r,"precio_compra","costo","cost","precio_costo","p_compra")) || 0,
+          precioVenta: Number(col(r,"precio_venta","precio","price","pvp","valor","p_venta")) || 0,
+          iva: Number(col(r,"iva","tax","impuesto")) || 0,
+          stock: Number(col(r,"stock","cantidad","quantity","existencias","existencia","unidades")) || 0,
+          stockMinimo: Number(col(r,"stock_minimo","min_stock","minimo","stock_min")) || 5,
+          activo: col(r,"activo","active") !== undefined ? Boolean(col(r,"activo","active")) : true,
+        };
+      }).filter(Boolean) as Partial<Producto>[];
+
+      if (!payload.length) return toast.error("No se encontraron filas válidas. El archivo debe tener al menos una columna 'nombre'.");
       await productosApi.importar(payload);
-      toast.success(`${payload.length} productos importados`); load();
-    } catch (e: any) { toast.error(e.message ?? "Error al importar"); }
+      toast.success(`${payload.length} productos importados`);
+      load();
+    } catch (e: any) {
+      toast.error(e.response?.data ?? e.message ?? "Error al importar");
+    }
   };
 
   return (
