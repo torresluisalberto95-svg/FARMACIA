@@ -53,7 +53,7 @@ public class JwtUtil {
         return username.equals(userDetails.getUsername()) && !isExpired(token);
     }
 
-    private boolean isExpired(String token) {
+    public boolean isExpired(String token) {
         return parseClaims(token).getExpiration().before(new Date());
     }
 
