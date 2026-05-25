@@ -8,17 +8,21 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PageHeader } from "@/components/app/page-header";
-import { Plus, Minus, Trash2, ScanLine, Printer } from "lucide-react";
+import { Plus, Minus, Trash2, ScanLine, Printer, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/ventas")({ component: VentasPage });
 
 type Item = { producto: Producto; cantidad: number };
 type ClienteForm = { tipoDocumento: string; documento: string; nombre: string; telefono: string };
+type PrintCliente = { nombre: string; tipoDocumento: string; documento: string; telefono?: string | null } | null;
+type PrintItem = { nombre: string; cantidad: number; precioUnitario: number };
+type PrintData = { venta: Venta; cliente: PrintCliente; items: PrintItem[]; subtotal: number; iva: number; descuento: number; total: number };
 
 function esc(s: string) {
   return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -26,9 +30,9 @@ function esc(s: string) {
 
 function generarDocumento(
   win: Window,
-  venta: Venta,
-  cliente: Cliente | null,
-  items: Item[],
+  venta: { numero?: number | null; tipoVenta: string; numeroFactura?: string | null; metodoPago: string; createdAt: string },
+  cliente: PrintCliente,
+  items: PrintItem[],
   subtotal: number,
   iva: number,
   descuento: number,
@@ -44,20 +48,20 @@ function generarDocumento(
   if (esFactura) {
     const filas = items.map(it => `
       <tr>
-        <td>${esc(it.producto.nombre)}</td>
+        <td>${esc(it.nombre)}</td>
         <td class="c">${it.cantidad}</td>
-        <td class="r">${money(Number(it.producto.precioVenta))}</td>
-        <td class="r">${money(Number(it.producto.precioVenta) * it.cantidad)}</td>
+        <td class="r">${money(it.precioUnitario)}</td>
+        <td class="r">${money(it.precioUnitario * it.cantidad)}</td>
       </tr>`).join("");
 
     html = `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8">
-<title>Factura ${esc(String(venta.numeroFactura ?? venta.numero))}</title>
+<title>Factura ${esc(String(venta.numeroFactura ?? venta.numero ?? ""))}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Arial,sans-serif;font-size:11px;color:#000;padding:20px}
 .hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #000;padding-bottom:12px;margin-bottom:12px}
 .brand{font-size:20px;font-weight:bold}.brand-sub{font-size:10px;color:#666;margin-top:2px}
-.fnum{font-size:15px;font-weight:bold;text-align:right}.fnum-sub{text-align:right;margin-top:4px}
+.fnum{font-size:15px;font-weight:bold;text-align:right}.fsub{text-align:right;margin-top:4px}
 .info{display:grid;grid-template-columns:1fr 1fr;gap:12px;background:#f9f9f9;border:1px solid #ddd;border-radius:4px;padding:10px;margin-bottom:12px}
 .lbl{font-weight:bold;font-size:9px;color:#555;text-transform:uppercase;margin-bottom:2px}
 table{width:100%;border-collapse:collapse;margin-bottom:12px}
@@ -75,9 +79,9 @@ tr:nth-child(even) td{background:#fafafa}
   <div><div class="brand">${esc(brandName)}</div><div class="brand-sub">Farmacia · Sistema de Gestión</div></div>
   <div>
     <div class="fnum">FACTURA DE VENTA</div>
-    <div class="fnum-sub"><strong>N°:</strong> ${esc(String(venta.numeroFactura ?? venta.numero ?? ""))}</div>
-    <div class="fnum-sub"><strong>Fecha:</strong> ${fecha}</div>
-    <div class="fnum-sub"><strong>Pago:</strong> ${esc(venta.metodoPago)}</div>
+    <div class="fsub"><strong>N°:</strong> ${esc(String(venta.numeroFactura ?? venta.numero ?? ""))}</div>
+    <div class="fsub"><strong>Fecha:</strong> ${fecha}</div>
+    <div class="fsub"><strong>Pago:</strong> ${esc(venta.metodoPago)}</div>
   </div>
 </div>
 <div class="info">
@@ -108,11 +112,11 @@ tr:nth-child(even) td{background:#fafafa}
 </body></html>`;
   } else {
     const filas = items.map(it => `
-      <div class="item"><span>${esc(it.producto.nombre)}</span><span>${money(Number(it.producto.precioVenta) * it.cantidad)}</span></div>
-      <div class="det">${it.cantidad} × ${money(Number(it.producto.precioVenta))}</div>`).join("");
+      <div class="item"><span>${esc(it.nombre)}</span><span>${money(it.precioUnitario * it.cantidad)}</span></div>
+      <div class="det">${it.cantidad} × ${money(it.precioUnitario)}</div>`).join("");
 
     html = `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8">
-<title>Ticket #${venta.numero}</title>
+<title>Ticket #${venta.numero ?? ""}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:monospace;font-size:12px;width:300px;margin:0 auto;color:#000;padding:8px}
@@ -166,6 +170,9 @@ function VentasPage() {
   const [openNuevoCliente, setOpenNuevoCliente] = useState(false);
   const [clienteForm, setClienteForm] = useState<ClienteForm>({ tipoDocumento: "CC", documento: "", nombre: "", telefono: "" });
   const [savingCliente, setSavingCliente] = useState(false);
+  const [ventaParaImprimir, setVentaParaImprimir] = useState<PrintData | null>(null);
+  const [qHistorial, setQHistorial] = useState("");
+  const [reimprimiendo, setReimprimiendo] = useState<string | null>(null);
 
   const load = async () => {
     const [p, c, v] = await Promise.all([
@@ -186,6 +193,16 @@ function VentasPage() {
       (p.codigoBarras ?? "").includes(q)
     ).slice(0, 8);
   }, [q, productos]);
+
+  const historialFiltrado = useMemo(() => {
+    if (!qHistorial) return historial;
+    const s = qHistorial.toLowerCase();
+    return historial.filter(v =>
+      String(v.numero).includes(s) ||
+      v.metodoPago.toLowerCase().includes(s) ||
+      (v.numeroFactura ?? "").toLowerCase().includes(s)
+    );
+  }, [historial, qHistorial]);
 
   const addProd = (p: Producto) => {
     setItems(prev => {
@@ -238,10 +255,6 @@ function VentasPage() {
     if (items.length === 0) return toast.error("Agrega al menos un producto");
     if (tipoVenta === "FACTURADA" && cliente === "ninguno")
       return toast.error("Selecciona un cliente para generar la factura");
-
-    // Abre la ventana de impresión en contexto de gesto del usuario (antes del await)
-    const printWin = window.open("", "_blank");
-
     setLoading(true);
     try {
       const venta = await ventasApi.crear({
@@ -250,22 +263,40 @@ function VentasPage() {
         descuento, metodoPago: metodo, tipoVenta,
       });
       toast.success("Venta registrada correctamente");
-
       const clienteObj = tipoVenta === "FACTURADA" ? (clientes.find(c => c.id === cliente) ?? null) : null;
       const snap = { items: [...items], subtotal, iva, descuento, total };
       setItems([]); setDescuento(0); setCliente("ninguno"); setTipoVenta("CONSUMIDOR_FINAL");
       load();
-
-      if (printWin) {
-        generarDocumento(printWin, venta, clienteObj, snap.items, snap.subtotal, snap.iva, snap.descuento, snap.total, brandName);
-      } else {
-        toast.info("Activa ventanas emergentes para imprimir el documento");
-      }
+      setVentaParaImprimir({
+        venta,
+        cliente: clienteObj ? { nombre: clienteObj.nombre, tipoDocumento: clienteObj.tipoDocumento ?? "CC", documento: clienteObj.documento ?? "", telefono: clienteObj.telefono } : null,
+        items: snap.items.map(it => ({ nombre: it.producto.nombre, cantidad: it.cantidad, precioUnitario: Number(it.producto.precioVenta) })),
+        subtotal: snap.subtotal, iva: snap.iva, descuento: snap.descuento, total: snap.total,
+      });
     } catch (err: any) {
-      if (printWin) printWin.close();
       toast.error(err.response?.data ?? err.message ?? "Error");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const reimprimir = async (ventaId: string) => {
+    setReimprimiendo(ventaId);
+    try {
+      const detalle = await ventasApi.obtenerDetalle(ventaId);
+      const win = window.open("", "_blank");
+      if (!win) { toast.error("Activa ventanas emergentes para reimprimir"); return; }
+      generarDocumento(
+        win, detalle,
+        detalle.clienteNombre ? { nombre: detalle.clienteNombre, tipoDocumento: detalle.clienteTipoDocumento ?? "CC", documento: detalle.clienteDocumento ?? "" } : null,
+        detalle.items.map(it => ({ nombre: it.productoNombre, cantidad: it.cantidad, precioUnitario: Number(it.precioUnitario) })),
+        Number(detalle.subtotal), Number(detalle.iva), Number(detalle.descuento), Number(detalle.total),
+        brandName,
+      );
+    } catch {
+      toast.error("Error al cargar los datos de la venta");
+    } finally {
+      setReimprimiendo(null);
     }
   };
 
@@ -273,10 +304,10 @@ function VentasPage() {
 
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto">
-      <PageHeader title="Punto de venta" description="Registra ventas y genera documentos." />
+      <PageHeader title="Punto de venta" description="Registra ventas y consulta el historial." />
       <div className="grid lg:grid-cols-[1fr_400px] gap-6">
         <div className="space-y-4">
-          {/* Búsqueda de producto */}
+          {/* Búsqueda */}
           <Card className="p-4">
             <Label className="text-xs">Buscar producto o escanear código</Label>
             <div className="relative mt-1">
@@ -350,63 +381,95 @@ function VentasPage() {
             </div>
           </Card>
 
-          {/* Historial */}
+          {/* Historial de ventas */}
           <Card className="p-4">
-            <h3 className="text-sm font-semibold mb-2">Últimas ventas</h3>
-            <ul className="text-sm divide-y">
-              {historial.map(v => (
-                <li key={v.id} className="flex flex-wrap justify-between gap-x-4 py-2">
-                  <span className="min-w-0 text-muted-foreground">
-                    #{v.numero} · {v.tipoVenta === "FACTURADA" ? `Factura ${v.numeroFactura ?? ""}` : "Consumidor Final"} · {v.metodoPago} · {new Date(v.createdAt).toLocaleString("es-CO")}
-                  </span>
-                  <span className="font-medium shrink-0">{money(Number(v.total))}</span>
-                </li>
-              ))}
-              {historial.length === 0 && <li className="py-2 text-muted-foreground">Sin ventas</li>}
-            </ul>
+            <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+              <h3 className="text-sm font-semibold shrink-0">Historial de ventas</h3>
+              <Input
+                placeholder="Buscar por #, método o factura…"
+                value={qHistorial}
+                onChange={e => setQHistorial(e.target.value)}
+                className="h-8 text-sm max-w-[230px]"
+              />
+            </div>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>#</TableHead>
+                    <TableHead>Fecha</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Pago</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {historialFiltrado.map(v => (
+                    <TableRow key={v.id}>
+                      <TableCell className="font-mono text-xs">{v.numero}</TableCell>
+                      <TableCell className="text-xs whitespace-nowrap">{new Date(v.createdAt).toLocaleString("es-CO")}</TableCell>
+                      <TableCell>
+                        {v.tipoVenta === "FACTURADA"
+                          ? <Badge variant="default" className="text-xs">{v.numeroFactura ?? "Factura"}</Badge>
+                          : <Badge variant="secondary" className="text-xs">Consumidor</Badge>}
+                      </TableCell>
+                      <TableCell className="text-xs capitalize">{v.metodoPago}</TableCell>
+                      <TableCell className="text-right text-xs font-medium">{money(Number(v.total))}</TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-xs gap-1"
+                          onClick={() => reimprimir(v.id)}
+                          disabled={reimprimiendo === v.id}
+                        >
+                          <Printer className="h-3 w-3" />
+                          {reimprimiendo === v.id ? "…" : "Reimprimir"}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {historialFiltrado.length === 0 && (
+                    <TableRow><TableCell colSpan={6} className="text-center py-6 text-muted-foreground">Sin ventas</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </Card>
         </div>
 
-        {/* Panel de resumen */}
+        {/* Panel resumen */}
         <Card className="p-5 h-fit sticky top-4" style={{ boxShadow: "var(--shadow-soft)" }}>
           <h2 className="font-semibold mb-4">Resumen</h2>
           <div className="space-y-3 mb-4">
-
             {/* ¿Desea factura? */}
             <div>
               <Label className="text-xs mb-1 block">¿Desea factura?</Label>
               <div className="flex rounded-md border overflow-hidden text-sm font-medium">
-                <button
-                  type="button"
+                <button type="button"
                   onClick={() => { setTipoVenta("CONSUMIDOR_FINAL"); setCliente("ninguno"); }}
-                  className={`flex-1 px-3 py-2 transition-colors ${tipoVenta === "CONSUMIDOR_FINAL" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
-                >
+                  className={`flex-1 px-3 py-2 transition-colors ${tipoVenta === "CONSUMIDOR_FINAL" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>
                   No
                 </button>
-                <button
-                  type="button"
+                <button type="button"
                   onClick={() => setTipoVenta("FACTURADA")}
-                  className={`flex-1 px-3 py-2 border-l transition-colors ${tipoVenta === "FACTURADA" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
-                >
+                  className={`flex-1 px-3 py-2 border-l transition-colors ${tipoVenta === "FACTURADA" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>
                   Sí
                 </button>
               </div>
             </div>
 
-            {/* Cliente — condicional */}
+            {/* Cliente */}
             {tipoVenta === "FACTURADA" ? (
               <div>
                 <Label className="text-xs">Cliente *</Label>
                 <div className="flex gap-2 mt-1">
                   <Select value={cliente} onValueChange={setCliente}>
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Seleccionar cliente…" />
-                    </SelectTrigger>
+                    <SelectTrigger className="flex-1"><SelectValue placeholder="Seleccionar cliente…" /></SelectTrigger>
                     <SelectContent>
                       {clientes.map(c => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.nombre} · {c.tipoDocumento} {c.documento}
-                        </SelectItem>
+                        <SelectItem key={c.id} value={c.id}>{c.nombre} · {c.tipoDocumento} {c.documento}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -414,9 +477,7 @@ function VentasPage() {
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
-                {cliente === "ninguno" && (
-                  <p className="text-xs text-destructive mt-1">Requerido para generar factura</p>
-                )}
+                {cliente === "ninguno" && <p className="text-xs text-destructive mt-1">Requerido para generar factura</p>}
               </div>
             ) : (
               <div>
@@ -470,7 +531,46 @@ function VentasPage() {
         </Card>
       </div>
 
-      {/* Modal: Registrar nuevo cliente */}
+      {/* Diálogo: ¿Desea imprimir? */}
+      <Dialog open={!!ventaParaImprimir} onOpenChange={v => !v && setVentaParaImprimir(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-green-600">
+              <CheckCircle2 className="h-5 w-5" />
+              Venta registrada
+            </DialogTitle>
+          </DialogHeader>
+          {ventaParaImprimir && (
+            <div className="text-center py-3 space-y-2">
+              <div className="text-3xl font-bold">{money(ventaParaImprimir.total)}</div>
+              <div className="text-sm text-muted-foreground">Venta #{ventaParaImprimir.venta.numero}</div>
+              <div>
+                {ventaParaImprimir.venta.tipoVenta === "FACTURADA"
+                  ? <Badge variant="default">{ventaParaImprimir.venta.numeroFactura ?? "Factura"}</Badge>
+                  : <Badge variant="secondary">Consumidor Final</Badge>}
+              </div>
+            </div>
+          )}
+          <p className="text-sm text-center text-muted-foreground">¿Desea imprimir el documento?</p>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" className="flex-1" onClick={() => setVentaParaImprimir(null)}>
+              No, cerrar
+            </Button>
+            <Button className="flex-1" onClick={() => {
+              if (!ventaParaImprimir) return;
+              const win = window.open("", "_blank");
+              if (win) generarDocumento(win, ventaParaImprimir.venta, ventaParaImprimir.cliente, ventaParaImprimir.items, ventaParaImprimir.subtotal, ventaParaImprimir.iva, ventaParaImprimir.descuento, ventaParaImprimir.total, brandName);
+              else toast.error("Activa ventanas emergentes para imprimir");
+              setVentaParaImprimir(null);
+            }}>
+              <Printer className="h-4 w-4 mr-1" />
+              Sí, imprimir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo: Registrar nuevo cliente */}
       <Dialog open={openNuevoCliente} onOpenChange={v => { setOpenNuevoCliente(v); if (!v) setClienteForm({ tipoDocumento: "CC", documento: "", nombre: "", telefono: "" }); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>Registrar cliente</DialogTitle></DialogHeader>

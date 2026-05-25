@@ -13,6 +13,7 @@ import java.util.UUID;
 public interface VentaRepository extends JpaRepository<Venta, UUID> {
 
     List<Venta> findTop10ByOrderByCreatedAtDesc();
+    List<Venta> findTop200ByOrderByCreatedAtDesc();
 
     List<Venta> findByCreatedAtAfterOrderByCreatedAtDesc(OffsetDateTime from);
 

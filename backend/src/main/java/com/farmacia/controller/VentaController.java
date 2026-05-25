@@ -1,5 +1,6 @@
 package com.farmacia.controller;
 
+import com.farmacia.dto.VentaDetalleDTO;
 import com.farmacia.dto.VentaRequest;
 import com.farmacia.model.AppUser;
 import com.farmacia.model.Venta;
@@ -9,10 +10,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/ventas")
@@ -25,6 +26,15 @@ public class VentaController {
     @GetMapping
     public List<Venta> listar() {
         return ventaService.listar();
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<?> obtenerDetalle(@PathVariable UUID id) {
+        try {
+            return ResponseEntity.ok(ventaService.obtenerConDetalle(id));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @PostMapping

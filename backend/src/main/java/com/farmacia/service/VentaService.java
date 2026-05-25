@@ -1,9 +1,11 @@
 package com.farmacia.service;
 
+import com.farmacia.dto.VentaDetalleDTO;
 import com.farmacia.dto.VentaRequest;
 import com.farmacia.model.DetalleVenta;
 import com.farmacia.model.Producto;
 import com.farmacia.model.Venta;
+import com.farmacia.repository.ClienteRepository;
 import com.farmacia.repository.DetalleVentaRepository;
 import com.farmacia.repository.ProductoRepository;
 import com.farmacia.repository.VentaRepository;
@@ -14,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -22,9 +25,52 @@ public class VentaService {
     private final VentaRepository ventaRepository;
     private final DetalleVentaRepository detalleRepository;
     private final ProductoRepository productoRepository;
+    private final ClienteRepository clienteRepository;
 
     public List<Venta> listar() {
-        return ventaRepository.findTop10ByOrderByCreatedAtDesc();
+        return ventaRepository.findTop200ByOrderByCreatedAtDesc();
+    }
+
+    public VentaDetalleDTO obtenerConDetalle(UUID id) {
+        Venta venta = ventaRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Venta no encontrada"));
+        List<DetalleVenta> detalles = detalleRepository.findByVentaId(id);
+
+        VentaDetalleDTO dto = new VentaDetalleDTO();
+        dto.setId(venta.getId());
+        dto.setNumero(venta.getNumero());
+        dto.setTipoVenta(venta.getTipoVenta());
+        dto.setNumeroFactura(venta.getNumeroFactura());
+        dto.setMetodoPago(venta.getMetodoPago());
+        dto.setEstado(venta.getEstado());
+        dto.setSubtotal(venta.getSubtotal());
+        dto.setIva(venta.getIva());
+        dto.setDescuento(venta.getDescuento());
+        dto.setTotal(venta.getTotal());
+        dto.setCreatedAt(venta.getCreatedAt());
+
+        if (venta.getClienteId() != null) {
+            clienteRepository.findById(venta.getClienteId()).ifPresent(c -> {
+                dto.setClienteNombre(c.getNombre());
+                dto.setClienteDocumento(c.getDocumento());
+                dto.setClienteTipoDocumento(c.getTipoDocumento());
+            });
+        }
+
+        List<VentaDetalleDTO.ItemDTO> items = detalles.stream().map(d -> {
+            VentaDetalleDTO.ItemDTO item = new VentaDetalleDTO.ItemDTO();
+            productoRepository.findById(d.getProductoId()).ifPresent(p -> {
+                item.setProductoNombre(p.getNombre());
+                item.setProductoCodigo(p.getCodigo());
+            });
+            item.setCantidad(d.getCantidad());
+            item.setPrecioUnitario(d.getPrecioUnitario());
+            item.setSubtotal(d.getSubtotal());
+            return item;
+        }).collect(Collectors.toList());
+        dto.setItems(items);
+
+        return dto;
     }
 
     @Transactional
