@@ -14,6 +14,7 @@ public class VentaRequest {
     private List<ItemVenta> items;
     private BigDecimal descuento = BigDecimal.ZERO;
     private String metodoPago = "efectivo";
+    private String tipoVenta = "CONSUMIDOR_FINAL";
 
     @Data
     public static class ItemVenta {

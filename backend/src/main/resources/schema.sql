@@ -150,6 +150,11 @@ INSERT INTO configuracion (brand_name, singleton)
 VALUES ('MD FarmaSalud', true)
 ON CONFLICT (singleton) DO NOTHING;
 
+-- ============ MIGRACIONES IDEMPOTENTES ============
+ALTER TABLE clientes    ADD COLUMN IF NOT EXISTS tipo_documento TEXT DEFAULT 'CC';
+ALTER TABLE ventas      ADD COLUMN IF NOT EXISTS tipo_venta     TEXT NOT NULL DEFAULT 'CONSUMIDOR_FINAL';
+ALTER TABLE ventas      ADD COLUMN IF NOT EXISTS numero_factura TEXT;
+
 -- ============ ÍNDICES ============
 CREATE INDEX IF NOT EXISTS idx_productos_codigo ON productos(codigo);
 CREATE INDEX IF NOT EXISTS idx_productos_nombre ON productos(nombre);

@@ -55,6 +55,7 @@ public class VentaService {
         venta.setDescuento(descuento);
         venta.setTotal(total);
         venta.setMetodoPago(req.getMetodoPago());
+        venta.setTipoVenta(req.getTipoVenta() != null ? req.getTipoVenta() : "CONSUMIDOR_FINAL");
         venta = ventaRepository.save(venta);
 
         for (VentaRequest.ItemVenta item : req.getItems()) {
@@ -73,6 +74,12 @@ public class VentaService {
             productoRepository.save(p);
         }
 
-        return ventaRepository.findById(venta.getId()).orElse(venta);
+        Venta ventaFinal = ventaRepository.findById(venta.getId()).orElse(venta);
+        if ("FACTURADA".equals(ventaFinal.getTipoVenta()) && ventaFinal.getNumero() != null) {
+            String year = String.valueOf(java.time.Year.now().getValue());
+            ventaFinal.setNumeroFactura("FAC-" + year + "-" + String.format("%06d", ventaFinal.getNumero()));
+            ventaFinal = ventaRepository.save(ventaFinal);
+        }
+        return ventaFinal;
     }
 }

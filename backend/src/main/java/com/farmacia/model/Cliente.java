@@ -18,6 +18,9 @@ public class Cliente {
 
     private String documento;
 
+    @Column(name = "tipo_documento")
+    private String tipoDocumento = "CC";
+
     @Column(nullable = false)
     private String nombre;
 

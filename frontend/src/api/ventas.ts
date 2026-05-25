@@ -11,6 +11,7 @@ export interface VentaRequest {
   items: ItemVenta[];
   descuento?: number;
   metodoPago: string;
+  tipoVenta: "FACTURADA" | "CONSUMIDOR_FINAL";
 }
 
 export interface Venta {
@@ -23,6 +24,8 @@ export interface Venta {
   descuento: number;
   total: number;
   metodoPago: string;
+  tipoVenta: string;
+  numeroFactura: string | null;
   estado: string;
   createdAt: string;
 }

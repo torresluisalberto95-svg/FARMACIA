@@ -2,6 +2,7 @@ import { api } from "./client";
 
 export interface Cliente {
   id: string;
+  tipoDocumento: string;
   documento: string | null;
   nombre: string;
   telefono: string | null;

@@ -41,6 +41,12 @@ public class Venta {
     @Column(name = "metodo_pago", nullable = false)
     private String metodoPago = "efectivo";
 
+    @Column(name = "tipo_venta", nullable = false)
+    private String tipoVenta = "CONSUMIDOR_FINAL";
+
+    @Column(name = "numero_factura")
+    private String numeroFactura;
+
     @Column(nullable = false)
     private String estado = "completada";
 
