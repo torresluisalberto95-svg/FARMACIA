@@ -1,0 +1,188 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { productosApi, type Producto } from "@/api/productos";
+import { useAuth } from "@/hooks/use-auth";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/app/page-header";
+import { Plus, Pencil, Trash2, Download, Upload } from "lucide-react";
+import { toast } from "sonner";
+
+export const Route = createFileRoute("/_authenticated/productos")({ component: ProductosPage });
+
+const empty: Partial<Producto> = { codigo: "", nombre: "", precioCompra: 0, precioVenta: 0, iva: 19, stock: 0, stockMinimo: 5, activo: true, tipoMedicamento: "comercial" };
+
+function ProductosPage() {
+  const { role } = useAuth();
+  const isAdmin = role === "admin";
+  const [items, setItems] = useState<Producto[]>([]);
+  const [q, setQ] = useState("");
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<Partial<Producto>>(empty);
+
+  const load = () => productosApi.listar().then(setItems).catch(console.error);
+  useEffect(() => { load(); }, []);
+
+  const filtered = items.filter(p =>
+    p.nombre.toLowerCase().includes(q.toLowerCase()) ||
+    p.codigo.toLowerCase().includes(q.toLowerCase()) ||
+    (p.codigoBarras ?? "").includes(q)
+  );
+
+  const save = async () => {
+    if (!editing.codigo || !editing.nombre) return toast.error("Código y nombre son obligatorios");
+    try {
+      if (editing.id) {
+        await productosApi.actualizar(editing.id, editing);
+      } else {
+        await productosApi.crear(editing);
+      }
+      toast.success("Producto guardado");
+      setOpen(false); setEditing(empty); load();
+    } catch (err: any) {
+      toast.error(err.response?.data ?? err.message ?? "Error");
+    }
+  };
+
+  const remove = async (id: string) => {
+    if (!confirm("¿Eliminar producto?")) return;
+    try {
+      await productosApi.eliminar(id);
+      toast.success("Eliminado"); load();
+    } catch (err: any) {
+      toast.error(err.response?.data ?? "Error");
+    }
+  };
+
+  const exportarExcel = async () => {
+    const XLSX = await import("xlsx");
+    const rows = items.map(p => ({
+      codigo: p.codigo, codigo_barras: p.codigoBarras ?? "", nombre: p.nombre,
+      tipo_medicamento: p.tipoMedicamento, marca: p.marca ?? "", laboratorio: p.laboratorio ?? "",
+      registro_invima: p.registroInvima ?? "", lote: p.lote ?? "",
+      fecha_vencimiento: p.fechaVencimiento ?? "", precio_compra: p.precioCompra,
+      precio_venta: p.precioVenta, iva: p.iva, stock: p.stock, stock_minimo: p.stockMinimo,
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Inventario");
+    XLSX.writeFile(wb, `inventario_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    toast.success("Inventario exportado");
+  };
+
+  const importarExcel = async (file: File) => {
+    try {
+      const XLSX = await import("xlsx");
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf);
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json<Record<string, any>>(ws);
+      if (!rows.length) return toast.error("Archivo vacío");
+      const payload: Partial<Producto>[] = rows.map(r => ({
+        codigo: String(r.codigo ?? r.Codigo ?? "").trim(),
+        codigoBarras: r.codigo_barras ? String(r.codigo_barras) : null,
+        nombre: String(r.nombre ?? r.Nombre ?? "").trim(),
+        tipoMedicamento: (r.tipo_medicamento ?? "comercial").toString().toLowerCase() === "generico" ? "generico" : "comercial",
+        marca: r.marca ?? null, laboratorio: r.laboratorio ?? null,
+        registroInvima: r.registro_invima ? String(r.registro_invima) : null,
+        lote: r.lote ? String(r.lote) : null,
+        fechaVencimiento: r.fecha_vencimiento ? String(r.fecha_vencimiento).slice(0, 10) : null,
+        precioCompra: Number(r.precio_compra) || 0, precioVenta: Number(r.precio_venta) || 0,
+        iva: Number(r.iva) || 0, stock: Number(r.stock) || 0, stockMinimo: Number(r.stock_minimo) || 5,
+        activo: r.activo === undefined ? true : Boolean(r.activo),
+      })).filter(p => p.codigo && p.nombre);
+      if (!payload.length) return toast.error("No hay filas válidas");
+      await productosApi.importar(payload);
+      toast.success(`${payload.length} productos importados`); load();
+    } catch (e: any) { toast.error(e.message ?? "Error al importar"); }
+  };
+
+  return (
+    <div className="p-6 max-w-7xl mx-auto">
+      <PageHeader title="Inventario" description={isAdmin ? "Gestiona productos." : "Consulta de productos."}
+        actions={isAdmin && (<>
+          <Button variant="outline" onClick={exportarExcel}><Download className="h-4 w-4 mr-1" />Exportar</Button>
+          <label>
+            <input type="file" accept=".xlsx,.xls" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) { importarExcel(f); e.target.value = ""; } }} />
+            <Button variant="outline" asChild><span><Upload className="h-4 w-4 mr-1" />Importar</span></Button>
+          </label>
+          <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEditing(empty); }}>
+            <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Nuevo producto</Button></DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader><DialogTitle>{editing.id ? "Editar" : "Nuevo"} producto</DialogTitle></DialogHeader>
+              <div className="grid grid-cols-2 gap-3">
+                <F label="Código*"><Input value={editing.codigo ?? ""} onChange={e => setEditing({ ...editing, codigo: e.target.value })} /></F>
+                <F label="Código de barras"><Input value={editing.codigoBarras ?? ""} onChange={e => setEditing({ ...editing, codigoBarras: e.target.value })} /></F>
+                <F label="Nombre*" wide><Input value={editing.nombre ?? ""} onChange={e => setEditing({ ...editing, nombre: e.target.value })} /></F>
+                <F label="Tipo">
+                  <Select value={editing.tipoMedicamento ?? "comercial"} onValueChange={v => setEditing({ ...editing, tipoMedicamento: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="generico">Genérico</SelectItem>
+                      <SelectItem value="comercial">Comercial</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </F>
+                <F label="Marca"><Input value={editing.marca ?? ""} onChange={e => setEditing({ ...editing, marca: e.target.value })} /></F>
+                <F label="Laboratorio"><Input value={editing.laboratorio ?? ""} onChange={e => setEditing({ ...editing, laboratorio: e.target.value })} /></F>
+                <F label="Registro INVIMA"><Input value={editing.registroInvima ?? ""} onChange={e => setEditing({ ...editing, registroInvima: e.target.value })} /></F>
+                <F label="Precio compra"><Input type="number" value={editing.precioCompra ?? 0} onChange={e => setEditing({ ...editing, precioCompra: Number(e.target.value) })} /></F>
+                <F label="Precio venta"><Input type="number" value={editing.precioVenta ?? 0} onChange={e => setEditing({ ...editing, precioVenta: Number(e.target.value) })} /></F>
+                <F label="IVA (%)"><Input type="number" value={editing.iva ?? 0} onChange={e => setEditing({ ...editing, iva: Number(e.target.value) })} /></F>
+                <F label="Stock"><Input type="number" value={editing.stock ?? 0} onChange={e => setEditing({ ...editing, stock: Number(e.target.value) })} /></F>
+                <F label="Stock mínimo"><Input type="number" value={editing.stockMinimo ?? 0} onChange={e => setEditing({ ...editing, stockMinimo: Number(e.target.value) })} /></F>
+                <F label="Lote"><Input value={editing.lote ?? ""} onChange={e => setEditing({ ...editing, lote: e.target.value })} /></F>
+                <F label="Fecha vencimiento"><Input type="date" value={editing.fechaVencimiento ?? ""} onChange={e => setEditing({ ...editing, fechaVencimiento: e.target.value })} /></F>
+                <F label="Descripción" wide><Input value={editing.descripcion ?? ""} onChange={e => setEditing({ ...editing, descripcion: e.target.value })} /></F>
+              </div>
+              <DialogFooter><Button onClick={save}>Guardar</Button></DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </>)}
+      />
+      <Card className="p-4">
+        <Input placeholder="Buscar por nombre, código o código de barras…" value={q} onChange={e => setQ(e.target.value)} className="mb-3 max-w-md" />
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow><TableHead>Código</TableHead><TableHead>Nombre</TableHead><TableHead>Lote</TableHead><TableHead>Vence</TableHead><TableHead className="text-right">Precio</TableHead><TableHead className="text-right">Stock</TableHead><TableHead /></TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map(p => (
+                <TableRow key={p.id}>
+                  <TableCell className="font-mono text-xs">{p.codigo}</TableCell>
+                  <TableCell className="font-medium">{p.nombre}<div className="text-xs text-muted-foreground">{p.laboratorio}</div></TableCell>
+                  <TableCell>{p.lote ?? "—"}</TableCell>
+                  <TableCell>{p.fechaVencimiento ?? "—"}</TableCell>
+                  <TableCell className="text-right">$ {Number(p.precioVenta).toLocaleString("es-CO")}</TableCell>
+                  <TableCell className="text-right">
+                    {p.stock <= p.stockMinimo ? <Badge variant="destructive">{p.stock}</Badge> : <Badge variant="secondary">{p.stock}</Badge>}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {isAdmin && (
+                      <div className="flex justify-end gap-1">
+                        <Button size="icon" variant="ghost" onClick={() => { setEditing(p); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" onClick={() => remove(p.id)}><Trash2 className="h-4 w-4" /></Button>
+                      </div>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+              {filtered.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Sin productos</TableCell></TableRow>}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function F({ label, children, wide }: { label: string; children: React.ReactNode; wide?: boolean }) {
+  return <div className={wide ? "col-span-2" : ""}><Label className="text-xs">{label}</Label>{children}</div>;
+}

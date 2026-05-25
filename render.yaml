@@ -1,0 +1,49 @@
+databases:
+  - name: farmacia-db
+    plan: free
+    region: oregon
+    databaseName: farmacia
+    user: farmacia_user
+
+services:
+  - type: web
+    name: farmacia-backend
+    env: docker
+    region: oregon
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: PGHOST
+        fromDatabase:
+          name: farmacia-db
+          property: host
+      - key: PGPORT
+        fromDatabase:
+          name: farmacia-db
+          property: port
+      - key: PGDATABASE
+        fromDatabase:
+          name: farmacia-db
+          property: database
+      - key: PGUSER
+        fromDatabase:
+          name: farmacia-db
+          property: user
+      - key: PGPASSWORD
+        fromDatabase:
+          name: farmacia-db
+          property: password
+      - key: DB_PARAMS
+        value: "?sslmode=require"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_EMAIL
+        value: admin@mdfarmasalud.com
+      - key: ADMIN_PASSWORD
+        value: Admin123!
+      - key: ADMIN_FULLNAME
+        value: Administrador
+      - key: CORS_ORIGINS
+        value: https://farmaciamdapp.vercel.app,http://localhost:5173
