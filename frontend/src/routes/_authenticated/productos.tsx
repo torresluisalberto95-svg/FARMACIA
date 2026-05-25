@@ -91,8 +91,15 @@ function ProductosPage() {
         s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, "_");
 
       // Busca el valor de una celda probando múltiples nombres de columna posibles
+      // Usa coincidencia por prefijo para tolerar nombres truncados (ej: "tipo_medica" → "tipo_medicamento")
       const col = (r: Record<string, any>, ...keys: string[]): any => {
-        const entry = Object.entries(r).find(([k]) => keys.some(k2 => norm(k) === norm(k2)));
+        const entry = Object.entries(r).find(([k]) => {
+          const nk = norm(k);
+          return keys.some(k2 => {
+            const nk2 = norm(k2);
+            return nk === nk2 || nk2.startsWith(nk) || nk.startsWith(nk2);
+          });
+        });
         return entry?.[1];
       };
 
@@ -124,7 +131,7 @@ function ProductosPage() {
           codigo,
           codigoBarras: col(r,"codigo_barras","barcode","ean","upc") ? String(col(r,"codigo_barras","barcode","ean","upc")) : null,
           nombre,
-          tipoMedicamento: String(col(r,"tipo_medicamento","tipo","type") ?? "comercial").toLowerCase() === "generico" ? "generico" : "comercial",
+          tipoMedicamento: String(col(r,"tipo_medicamento","tipo_medica","tipo","type") ?? "comercial").toLowerCase() === "generico" ? "generico" : "comercial",
           marca: col(r,"marca","brand","fabricante") ? String(col(r,"marca","brand","fabricante")) : null,
           laboratorio: col(r,"laboratorio","lab","manufacturer") ? String(col(r,"laboratorio","lab","manufacturer")) : null,
           registroInvima: col(r,"registro_invima","invima","registro") ? String(col(r,"registro_invima","invima","registro")) : null,
