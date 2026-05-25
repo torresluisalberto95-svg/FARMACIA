@@ -31,7 +31,11 @@ function LoginPage() {
       toast.success("Bienvenido");
       navigate({ to: "/dashboard" });
     } catch (err: any) {
-      toast.error(err.response?.data?.message ?? err.message ?? "Credenciales incorrectas");
+      if (err.code === "ECONNABORTED" || err.message?.includes("timeout")) {
+        toast.error("El servidor tardó demasiado en responder. Espera unos segundos e intenta de nuevo.");
+      } else {
+        toast.error(err.response?.data?.message ?? err.message ?? "Credenciales incorrectas");
+      }
     } finally {
       setLoading(false);
     }

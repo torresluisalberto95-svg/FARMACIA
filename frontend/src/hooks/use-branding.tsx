@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
-import { configuracionApi } from "@/api/configuracion";
 import defaultLogo from "@/assets/logo.png";
+
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8088";
 
 interface Branding {
   brandName: string;
@@ -16,13 +17,16 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     try {
-      const data = await configuracionApi.get();
-      if (data) {
+      // Use native fetch (no Axios interceptors) so a 401 response never
+      // triggers the redirect-to-login loop on the unauthenticated login page
+      const res = await fetch(`${BASE_URL}/api/configuracion`);
+      if (res.ok) {
+        const data = await res.json();
         setBrandName(data.brandName || "MD FarmaSalud");
         setLogoUrl(data.logoUrl || defaultLogo);
       }
     } catch {
-      // ignore — use defaults
+      // keep defaults on any network error
     }
   }, []);
 
