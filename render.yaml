@@ -8,19 +8,17 @@ databases:
 services:
   - type: web
     name: farmacia-backend
-    env: docker
+    runtime: docker
     region: oregon
     plan: free
     dockerfilePath: ./Dockerfile
     healthCheckPath: /api/health
     autoDeploy: true
     envVars:
-      # DATABASE_URL es el método nativo de Render — el start.sh lo convierte a JDBC
       - key: DATABASE_URL
         fromDatabase:
           name: farmacia-db
           property: connectionString
-      # Variables individuales como respaldo (usadas cuando DATABASE_URL no está)
       - key: PGHOST
         fromDatabase:
           name: farmacia-db
@@ -52,4 +50,4 @@ services:
       - key: ADMIN_FULLNAME
         value: Administrador
       - key: CORS_ORIGINS
-        value: https://farmaciamdapp.vercel.app,http://localhost:5173
+        value: https://farmasaludmd2026.vercel.app,http://localhost:5173
