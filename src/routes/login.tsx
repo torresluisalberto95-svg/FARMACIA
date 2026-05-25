@@ -5,7 +5,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import logo from "@/assets/logo.png";
@@ -19,7 +18,6 @@ function LoginPage() {
   const { user, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -33,23 +31,6 @@ function LoginPage() {
     setLoading(false);
     if (error) return toast.error(error.message);
     toast.success("Bienvenido");
-    navigate({ to: "/dashboard" });
-  };
-
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: fullName },
-        emailRedirectTo: `${window.location.origin}/dashboard`,
-      },
-    });
-    setLoading(false);
-    if (error) return toast.error(error.message);
-    toast.success("Cuenta creada. Iniciando sesión…");
     navigate({ to: "/dashboard" });
   };
 
@@ -75,54 +56,20 @@ function LoginPage() {
             <span className="font-semibold">MD FarmaSalud</span>
           </div>
           <h2 className="text-2xl font-bold mb-1">Acceso al sistema</h2>
-          <p className="text-sm text-muted-foreground mb-6">Inicia sesión o crea tu cuenta de empleado.</p>
-          <div className="mb-4 rounded-md border border-primary/20 bg-primary/5 px-3 py-2 text-xs">
-            <p className="font-medium">Acceso administrador</p>
-            <p className="text-muted-foreground">admin@mdfarmasalud.com · Admin123!</p>
-          </div>
-          <Tabs defaultValue="login">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Iniciar sesión</TabsTrigger>
-              <TabsTrigger value="signup">Crear cuenta (empleado)</TabsTrigger>
-            </TabsList>
-            <TabsContent value="login">
-              <form onSubmit={handleLogin} className="space-y-4 mt-4">
-                <div>
-                  <Label htmlFor="le">Correo</Label>
-                  <Input id="le" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-                </div>
-                <div>
-                  <Label htmlFor="lp">Contraseña</Label>
-                  <Input id="lp" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Entrando…" : "Entrar"}
-                </Button>
-              </form>
-            </TabsContent>
-            <TabsContent value="signup">
-              <form onSubmit={handleSignup} className="space-y-4 mt-4">
-                <div>
-                  <Label htmlFor="sn">Nombre completo</Label>
-                  <Input id="sn" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
-                </div>
-                <div>
-                  <Label htmlFor="se">Correo</Label>
-                  <Input id="se" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-                </div>
-                <div>
-                  <Label htmlFor="sp">Contraseña</Label>
-                  <Input id="sp" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Creando…" : "Crear cuenta"}
-                </Button>
-                <p className="text-xs text-muted-foreground">
-                  Las cuentas creadas desde aquí siempre se asignan como <strong>empleado</strong>. Solo un administrador puede promover a otros administradores.
-                </p>
-              </form>
-            </TabsContent>
-          </Tabs>
+          <p className="text-sm text-muted-foreground mb-6">Ingresa con las credenciales asignadas por el administrador.</p>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <Label htmlFor="email">Correo</Label>
+              <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+            </div>
+            <div>
+              <Label htmlFor="password">Contraseña</Label>
+              <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+            </div>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Entrando…" : "Entrar"}
+            </Button>
+          </form>
         </Card>
       </main>
     </div>
