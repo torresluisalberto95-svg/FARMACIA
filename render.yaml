@@ -15,6 +15,12 @@ services:
     healthCheckPath: /api/health
     autoDeploy: true
     envVars:
+      # DATABASE_URL es el método nativo de Render — el start.sh lo convierte a JDBC
+      - key: DATABASE_URL
+        fromDatabase:
+          name: farmacia-db
+          property: connectionString
+      # Variables individuales como respaldo (usadas cuando DATABASE_URL no está)
       - key: PGHOST
         fromDatabase:
           name: farmacia-db
