@@ -1,0 +1,14 @@
+FROM maven:3.9.9-eclipse-temurin-21-alpine AS build
+WORKDIR /app
+COPY backend/pom.xml .
+RUN mvn dependency:go-offline -q
+COPY backend/src ./src
+RUN mvn package -DskipTests -q
+
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+COPY --from=build /app/target/farmacia-backend-1.0.0.jar app.jar
+COPY start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+EXPOSE 8080
+ENTRYPOINT ["/app/start.sh"]

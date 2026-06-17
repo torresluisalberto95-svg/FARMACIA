@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: farmacia-backend
+    runtime: docker
+    region: oregon
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: PGHOST
+        value: aws-1-us-west-2.pooler.supabase.com
+      - key: PGPORT
+        value: "5432"
+      - key: PGDATABASE
+        value: postgres
+      - key: PGUSER
+        value: postgres.whfzmuqnhuklsxdiwwag
+      - key: PGPASSWORD
+        value: FarmaSalud2026*
+      - key: DB_PARAMS
+        value: "?sslmode=require"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_EMAIL
+        value: admin@mdfarmasalud.com
+      - key: ADMIN_PASSWORD
+        value: Admin123!
+      - key: ADMIN_FULLNAME
+        value: Administrador
+      - key: CORS_ORIGINS
+        value: https://farmasaludmd2026.vercel.app,http://localhost:5173
+      - key: APP_URL
+        value: https://farmacia-backend-md4f.onrender.com
