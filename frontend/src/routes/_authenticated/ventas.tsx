@@ -483,7 +483,7 @@ function VentasPage() {
                   <TableRow>
                     <TableHead>#</TableHead>
                     <TableHead className="hidden sm:table-cell">Fecha</TableHead>
-                    <TableHead className="hidden md:table-cell">Vendedor</TableHead>
+                    <TableHead className="hidden md:table-cell">Cajero/a</TableHead>
                     <TableHead className="hidden md:table-cell">Tipo</TableHead>
                     <TableHead className="hidden md:table-cell">Pago</TableHead>
                     <TableHead className="text-right">Total</TableHead>
