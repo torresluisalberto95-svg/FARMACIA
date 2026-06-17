@@ -27,6 +27,7 @@ export interface Venta {
   tipoVenta: string;
   numeroFactura: string | null;
   estado: string;
+  vendedorNombre: string | null;
   anuladoPor: string | null;
   anuladoAt: string | null;
   createdAt: string;

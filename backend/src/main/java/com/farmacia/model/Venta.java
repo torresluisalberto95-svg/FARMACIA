@@ -50,6 +50,9 @@ public class Venta {
     @Column(nullable = false)
     private String estado = "completada";
 
+    @Transient
+    private String vendedorNombre;
+
     @Column(name = "anulado_por")
     private UUID anuladoPor;
 

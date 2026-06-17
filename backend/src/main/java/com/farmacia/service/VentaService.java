@@ -2,9 +2,11 @@ package com.farmacia.service;
 
 import com.farmacia.dto.VentaDetalleDTO;
 import com.farmacia.dto.VentaRequest;
+import com.farmacia.model.AppUser;
 import com.farmacia.model.DetalleVenta;
 import com.farmacia.model.Producto;
 import com.farmacia.model.Venta;
+import com.farmacia.repository.AppUserRepository;
 import com.farmacia.repository.ClienteRepository;
 import com.farmacia.repository.DetalleVentaRepository;
 import com.farmacia.repository.ProductoRepository;
@@ -16,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -27,9 +31,15 @@ public class VentaService {
     private final DetalleVentaRepository detalleRepository;
     private final ProductoRepository productoRepository;
     private final ClienteRepository clienteRepository;
+    private final AppUserRepository appUserRepository;
 
     public List<Venta> listar() {
-        return ventaRepository.findTop200ByOrderByCreatedAtDesc();
+        List<Venta> ventas = ventaRepository.findTop200ByOrderByCreatedAtDesc();
+        Set<UUID> ids = ventas.stream().map(Venta::getVendedorId).collect(Collectors.toSet());
+        Map<UUID, String> nombres = appUserRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(AppUser::getId, AppUser::getFullName));
+        ventas.forEach(v -> v.setVendedorNombre(nombres.get(v.getVendedorId())));
+        return ventas;
     }
 
     public VentaDetalleDTO obtenerConDetalle(UUID id) {
@@ -137,6 +147,7 @@ public class VentaService {
             ventaFinal.setNumero(numeroReal);
         }
 
+        appUserRepository.findById(vendedorId).ifPresent(u -> ventaFinal.setVendedorNombre(u.getFullName()));
         return ventaFinal;
     }
 

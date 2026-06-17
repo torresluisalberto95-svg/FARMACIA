@@ -483,6 +483,7 @@ function VentasPage() {
                   <TableRow>
                     <TableHead>#</TableHead>
                     <TableHead className="hidden sm:table-cell">Fecha</TableHead>
+                    <TableHead className="hidden md:table-cell">Vendedor</TableHead>
                     <TableHead className="hidden md:table-cell">Tipo</TableHead>
                     <TableHead className="hidden md:table-cell">Pago</TableHead>
                     <TableHead className="text-right">Total</TableHead>
@@ -499,6 +500,7 @@ function VentasPage() {
                         <div className="text-xs text-muted-foreground sm:hidden">{new Date(v.createdAt).toLocaleDateString("es-CO")}</div>
                       </TableCell>
                       <TableCell className="hidden sm:table-cell text-xs whitespace-nowrap">{new Date(v.createdAt).toLocaleString("es-CO")}</TableCell>
+                      <TableCell className="hidden md:table-cell text-xs">{v.vendedorNombre ?? "—"}</TableCell>
                       <TableCell className="hidden md:table-cell">
                         {anulada
                           ? <Badge variant="destructive" className="text-xs">ANULADA</Badge>
