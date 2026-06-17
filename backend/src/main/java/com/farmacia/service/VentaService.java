@@ -147,7 +147,9 @@ public class VentaService {
             ventaFinal.setNumero(numeroReal);
         }
 
-        appUserRepository.findById(vendedorId).ifPresent(u -> ventaFinal.setVendedorNombre(u.getFullName()));
+        String nombreVendedor = appUserRepository.findById(vendedorId)
+                .map(AppUser::getFullName).orElse(null);
+        ventaFinal.setVendedorNombre(nombreVendedor);
         return ventaFinal;
     }
 
