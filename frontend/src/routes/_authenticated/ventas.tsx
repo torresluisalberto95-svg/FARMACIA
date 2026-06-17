@@ -94,12 +94,13 @@ h1{font-size:11pt;font-weight:900;text-align:center;letter-spacing:.5px;text-tra
 .meta{font-size:8pt;font-weight:700;line-height:1.7}
 table{width:100%;border-collapse:collapse;margin:1mm 0}
 table thead tr{border-bottom:1.5px solid #000}
-table th{font-size:7.5pt;font-weight:900;padding:0 0 1mm 0;text-transform:uppercase}
-table th.cant,table th.monto{text-align:right}
-table td{font-size:8pt;font-weight:700;padding:1mm 0;vertical-align:top}
-td.pnombre{width:44%}
-td.cant{width:10%;text-align:right}
-td.monto{width:23%;text-align:right}
+table th{font-size:7pt;font-weight:900;padding:0 1mm 1mm 0;text-transform:uppercase}
+table th.cant{text-align:right;padding-left:2mm}
+table th.monto{text-align:right;padding-left:2mm}
+table td{font-size:7.5pt;font-weight:700;padding:1mm 0;vertical-align:top}
+td.pnombre{width:40%}
+td.cant{width:10%;text-align:right;padding-left:2mm}
+td.monto{width:25%;text-align:right;padding-left:2mm}
 .lote{font-size:7pt;font-weight:700;color:#000}
 .sep-items{border-top:1.5px dashed #000;margin-top:1mm}
 .totales{width:100%;margin-top:1mm}
@@ -145,10 +146,10 @@ ${farma.personaNaturalDir ? `Direccion: ${esc(farma.personaNaturalDir)}<br>` : "
 <table>
   <thead>
     <tr>
-      <th style="width:44%">Producto</th>
+      <th style="width:40%">Producto</th>
       <th class="cant" style="width:10%">Cant</th>
-      <th class="monto" style="width:23%">P.Unit</th>
-      <th class="monto" style="width:23%">Total</th>
+      <th class="monto" style="width:25%">P.Unit</th>
+      <th class="monto" style="width:25%">Total</th>
     </tr>
   </thead>
   <tbody>${filas}</tbody>
