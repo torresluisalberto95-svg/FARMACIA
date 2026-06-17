@@ -72,7 +72,7 @@ function Dashboard() {
       {/* ── Tarjetas ── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
         <StatCard label="Ventas hoy"       value={String(stats.ventasHoy  ?? 0)} sub={money(stats.totalHoy  ?? 0)} icon={ShoppingCart} />
-        <StatCard label="Ventas mes"       value={String(stats.ventasMes  ?? 0)} sub={money(stats.totalMes  ?? 0)} icon={TrendingUp}   accent="bg-green-500/10 text-green-600" />
+        {isAdmin && <StatCard label="Ventas mes"       value={String(stats.ventasMes  ?? 0)} sub={money(stats.totalMes  ?? 0)} icon={TrendingUp}   accent="bg-green-500/10 text-green-600" />}
         {isAdmin && <StatCard label="Ingresos hoy"     value={money(stats.totalHoy      ?? 0)} icon={DollarSign} accent="bg-blue-500/10 text-blue-600" />}
         {isAdmin && <StatCard label="Ingresos mes"     value={money(stats.totalMes      ?? 0)} icon={DollarSign} accent="bg-indigo-500/10 text-indigo-600" />}
         {isAdmin && <StatCard label="Valor inventario" value={money(stats.valorInventario ?? 0)} icon={Boxes}   accent="bg-purple-500/10 text-purple-600" />}
@@ -80,8 +80,8 @@ function Dashboard() {
         <StatCard label="Por vencer"       value={String(stats.porVencer  ?? 0)} icon={AlertTriangle} accent="bg-destructive/10 text-destructive" />
       </div>
 
-      {/* ── Líneas: ingresos por día ── */}
-      {ventasPorDia.length > 0 && (
+      {/* ── Líneas: ingresos por día (solo admin) ── */}
+      {isAdmin && ventasPorDia.length > 0 && (
         <Card className="p-5">
           <h2 className="font-semibold mb-4">Ingresos — últimos 30 días</h2>
           <ResponsiveContainer width="100%" height={220}>
