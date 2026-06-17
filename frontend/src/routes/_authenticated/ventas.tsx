@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PageHeader } from "@/components/app/page-header";
-import { Plus, Minus, Trash2, ScanLine, Printer, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Plus, Minus, Trash2, ScanLine, Printer, CheckCircle2, AlertTriangle, Ban } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/ventas")({ component: VentasPage });
@@ -215,6 +215,8 @@ function VentasPage() {
   const [reimprimiendo, setReimprimiendo] = useState<string | null>(null);
   const [confirmEliminarVentas, setConfirmEliminarVentas] = useState(false);
   const [eliminandoVentas, setEliminandoVentas] = useState(false);
+  const [confirmAnular, setConfirmAnular] = useState<string | null>(null);
+  const [anulando, setAnulando] = useState(false);
 
   const load = async () => {
     const [p, c, v] = await Promise.all([
@@ -357,6 +359,21 @@ function VentasPage() {
     }
   };
 
+  const anularVenta = async () => {
+    if (!confirmAnular) return;
+    setAnulando(true);
+    try {
+      await ventasApi.anular(confirmAnular);
+      toast.success("Venta anulada. El stock fue restaurado.");
+      load();
+    } catch (err: any) {
+      toast.error(err.response?.data ?? "Error al anular la venta");
+    } finally {
+      setAnulando(false);
+      setConfirmAnular(null);
+    }
+  };
+
   const money = (n: number) => `$ ${n.toLocaleString("es-CO", { maximumFractionDigits: 0 })}`;
 
   return (
@@ -473,34 +490,53 @@ function VentasPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {historialFiltrado.map(v => (
-                    <TableRow key={v.id}>
+                  {historialFiltrado.map(v => {
+                    const anulada = v.estado === "anulada";
+                    return (
+                    <TableRow key={v.id} className={anulada ? "opacity-60" : ""}>
                       <TableCell className="font-mono text-xs">
                         {v.numero}
                         <div className="text-xs text-muted-foreground sm:hidden">{new Date(v.createdAt).toLocaleDateString("es-CO")}</div>
                       </TableCell>
                       <TableCell className="hidden sm:table-cell text-xs whitespace-nowrap">{new Date(v.createdAt).toLocaleString("es-CO")}</TableCell>
                       <TableCell className="hidden md:table-cell">
-                        {v.tipoVenta === "FACTURADA"
-                          ? <Badge variant="default" className="text-xs">{v.numeroFactura ?? "Factura"}</Badge>
-                          : <Badge variant="secondary" className="text-xs">Consumidor</Badge>}
+                        {anulada
+                          ? <Badge variant="destructive" className="text-xs">ANULADA</Badge>
+                          : v.tipoVenta === "FACTURADA"
+                            ? <Badge variant="default" className="text-xs">{v.numeroFactura ?? "Factura"}</Badge>
+                            : <Badge variant="secondary" className="text-xs">Consumidor</Badge>}
                       </TableCell>
                       <TableCell className="hidden md:table-cell text-xs capitalize">{v.metodoPago}</TableCell>
                       <TableCell className="text-right text-xs font-medium">{money(Number(v.total))}</TableCell>
                       <TableCell>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 text-xs gap-1"
-                          onClick={() => reimprimir(v.id)}
-                          disabled={reimprimiendo === v.id}
-                        >
-                          <Printer className="h-3 w-3" />
-                          {reimprimiendo === v.id ? "…" : "Reimprimir"}
-                        </Button>
+                        <div className="flex gap-1 justify-end">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-xs gap-1"
+                            onClick={() => reimprimir(v.id)}
+                            disabled={anulada || reimprimiendo === v.id}
+                            title={anulada ? "No se puede reimprimir una venta anulada" : "Reimprimir"}
+                          >
+                            <Printer className="h-3 w-3" />
+                            {reimprimiendo === v.id ? "…" : "Reimprimir"}
+                          </Button>
+                          {role === "admin" && !anulada && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs gap-1 text-destructive hover:text-destructive"
+                              onClick={() => setConfirmAnular(v.id)}
+                            >
+                              <Ban className="h-3 w-3" />
+                              Anular
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                   {historialFiltrado.length === 0 && (
                     <TableRow><TableCell colSpan={6} className="text-center py-6 text-muted-foreground">Sin ventas</TableCell></TableRow>
                   )}
@@ -695,6 +731,30 @@ function VentasPage() {
             </Button>
             <Button variant="destructive" className="flex-1" disabled={eliminandoVentas} onClick={eliminarTodasVentas}>
               {eliminandoVentas ? "Eliminando…" : "Sí, eliminar todo"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo: Confirmar anulación de venta */}
+      <Dialog open={!!confirmAnular} onOpenChange={v => !v && setConfirmAnular(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Ban className="h-5 w-5" />
+              Anular venta
+            </DialogTitle>
+            <DialogDescription>
+              Se marcará la venta como <strong>ANULADA</strong> y el stock de todos los productos
+              involucrados será <strong>restaurado automáticamente</strong>. Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" className="flex-1" onClick={() => setConfirmAnular(null)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" className="flex-1" disabled={anulando} onClick={anularVenta}>
+              {anulando ? "Anulando…" : "Sí, anular venta"}
             </Button>
           </DialogFooter>
         </DialogContent>

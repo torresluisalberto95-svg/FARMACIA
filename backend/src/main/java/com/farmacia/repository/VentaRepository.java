@@ -35,4 +35,7 @@ public interface VentaRepository extends JpaRepository<Venta, UUID> {
         "FROM ventas GROUP BY metodo_pago ORDER BY cantidad DESC",
         nativeQuery = true)
     List<Object[]> ventasPorMetodoPago();
+
+    @Query(value = "SELECT numero FROM ventas WHERE id = :id", nativeQuery = true)
+    Integer findNumeroByVentaId(@Param("id") UUID id);
 }

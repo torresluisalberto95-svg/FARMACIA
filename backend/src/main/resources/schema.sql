@@ -154,6 +154,8 @@ ON CONFLICT (singleton) DO NOTHING;
 ALTER TABLE clientes    ADD COLUMN IF NOT EXISTS tipo_documento TEXT DEFAULT 'CC';
 ALTER TABLE ventas      ADD COLUMN IF NOT EXISTS tipo_venta     TEXT NOT NULL DEFAULT 'CONSUMIDOR_FINAL';
 ALTER TABLE ventas      ADD COLUMN IF NOT EXISTS numero_factura TEXT;
+ALTER TABLE ventas      ADD COLUMN IF NOT EXISTS anulado_por    UUID REFERENCES app_users(id) ON DELETE SET NULL;
+ALTER TABLE ventas      ADD COLUMN IF NOT EXISTS anulado_at     TIMESTAMPTZ;
 
 -- Datos fiscales y de farmacia en configuracion
 ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS nit                    TEXT;

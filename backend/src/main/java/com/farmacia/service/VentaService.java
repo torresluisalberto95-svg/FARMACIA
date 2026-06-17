@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -103,7 +104,8 @@ public class VentaService {
         venta.setTotal(total);
         venta.setMetodoPago(req.getMetodoPago());
         venta.setTipoVenta(req.getTipoVenta() != null ? req.getTipoVenta() : "CONSUMIDOR_FINAL");
-        venta = ventaRepository.save(venta);
+        // saveAndFlush garantiza que el INSERT llega a la BD y el SERIAL genera el numero
+        venta = ventaRepository.saveAndFlush(venta);
 
         for (VentaRequest.ItemVenta item : req.getItems()) {
             Producto p = productoRepository.findById(item.getProductoId()).orElseThrow();
@@ -121,12 +123,44 @@ public class VentaService {
             productoRepository.save(p);
         }
 
+        // Consulta nativa para obtener el numero real generado por el SERIAL de BD
+        // (findById usa la cache de JPA y devuelve null para columnas con insertable=false)
+        Integer numeroReal = ventaRepository.findNumeroByVentaId(venta.getId());
+
         Venta ventaFinal = ventaRepository.findById(venta.getId()).orElse(venta);
-        if ("FACTURADA".equals(ventaFinal.getTipoVenta()) && ventaFinal.getNumero() != null) {
+        ventaFinal.setNumero(numeroReal);
+
+        if ("FACTURADA".equals(ventaFinal.getTipoVenta()) && numeroReal != null) {
             String year = String.valueOf(java.time.Year.now().getValue());
-            ventaFinal.setNumeroFactura("FAC-" + year + "-" + String.format("%06d", ventaFinal.getNumero()));
+            ventaFinal.setNumeroFactura("FAC-" + year + "-" + String.format("%06d", numeroReal));
             ventaFinal = ventaRepository.save(ventaFinal);
+            ventaFinal.setNumero(numeroReal);
         }
+
         return ventaFinal;
+    }
+
+    @Transactional
+    public Venta anular(UUID ventaId, UUID adminId) {
+        Venta venta = ventaRepository.findById(ventaId)
+                .orElseThrow(() -> new RuntimeException("Venta no encontrada"));
+
+        if ("anulada".equals(venta.getEstado())) {
+            throw new RuntimeException("Esta venta ya fue anulada anteriormente");
+        }
+
+        // Restaurar stock de cada producto involucrado en la venta
+        List<DetalleVenta> detalles = detalleRepository.findByVentaId(ventaId);
+        for (DetalleVenta det : detalles) {
+            productoRepository.findById(det.getProductoId()).ifPresent(p -> {
+                p.setStock(p.getStock() + det.getCantidad());
+                productoRepository.save(p);
+            });
+        }
+
+        venta.setEstado("anulada");
+        venta.setAnuladoPor(adminId);
+        venta.setAnuladoAt(OffsetDateTime.now());
+        return ventaRepository.save(venta);
     }
 }

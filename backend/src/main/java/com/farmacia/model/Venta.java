@@ -50,6 +50,12 @@ public class Venta {
     @Column(nullable = false)
     private String estado = "completada";
 
+    @Column(name = "anulado_por")
+    private UUID anuladoPor;
+
+    @Column(name = "anulado_at")
+    private OffsetDateTime anuladoAt;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;

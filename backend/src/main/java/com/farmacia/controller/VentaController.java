@@ -67,4 +67,17 @@ public class VentaController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @PostMapping("/{id}/anular")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> anular(@PathVariable UUID id,
+                                     @AuthenticationPrincipal String username) {
+        try {
+            AppUser admin = userRepository.findByEmail(username).orElseThrow();
+            Venta venta = ventaService.anular(id, admin.getId());
+            return ResponseEntity.ok(venta);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }
